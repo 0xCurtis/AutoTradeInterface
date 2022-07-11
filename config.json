@@ -1,0 +1,22 @@
+{
+    "creds" : {
+        "api_key":"REDACTED",
+        "api_secret":"REDACTED"
+    },
+    "parameters" : {
+        "endpoint":"https://api-testnet.bybit.com",
+        "trailing_sl" : {
+            "used" : true,
+            "every_preset": "0.15,0.25,0.35,0.45,0.55,0.65",
+            "up_to_preset": "0.05,0.15,0.20,0.35,0.40,0.50"
+        }
+    },
+    "logging": {
+        "logging": true,
+        "id": "REDACTED",
+        "desc": "Implementation Bot"
+    },
+    "network" : {
+        "port": 0
+    }
+}
