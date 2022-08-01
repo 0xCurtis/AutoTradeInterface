@@ -1,24 +1,46 @@
+from datetime import date
 from module import Bybot
-from flask import Flask,request,json
+from flask import Flask,request,json,g
+import os
+import pyfiglet
 
 app = Flask(__name__)
 
-# To test curl -i -X POST -H "Content-Type:application/json" -d "{\"pair\": \"BTCUSDT\", \"side\": \"BUY\"}" http://localhost:5000/develinput
-@app.route('/develinput',methods=['POST'])
+
+# To test curl -i -X POST -H "Content-Type:application/json" -d "{\"pair\": \"BTCUSDT\", \"side\": \"Buy\"}" http://localhost:6670/atmnewtrade 
+@app.route('/atmnewtrade',methods=['POST'])
 def develinput():
     auth_ip = ["REDACTED","REDACTED","REDACTED"]
     data = request.json
     ip = request.remote_addr
+    g.last_request = request
+    bot.log("request by {}".format(ip))
     if (ip not in auth_ip):
-        print("\nRequest not made by REDACTED auth ip list\n")
-    print(data)
-    print(ip)
-    return data
+        bot.log("Request not made by TradingView authorized ip list")
+        #return "Not Authorized"
+    if(bot.in_trade == False):
+        return "Bien bouffon t'as fait ta requete"
+    else:
+        return "Deja en trade"
+    
+@app.after_request
+def after_req_process(response):
+    print("after_request executing! BEDORE")
+    if(bot.in_trade == False):
+        bot.in_trade == True
+        bot.thread.setDaemon()
+    else:
+        bot.log("Already in trade")
+    print("after_request executing!")
+    return;
 
 @app.before_first_request
 def info():
     print(repr(bot))
 
-
-bot = Bybot.ByBot()
-bot.run()
+if __name__ == "__main__":
+    os.system('cls' if os.name == 'nt' else 'clear')
+    os.system('title ATM V0.1')
+    bot = Bybot.ByBot()
+    print(pyfiglet.figlet_format("ATM V0.1", font="slant"))
+    app.run(debug=False, host="localhost", port=bot.port)
