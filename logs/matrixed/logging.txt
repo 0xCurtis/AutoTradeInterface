@@ -1,0 +1,38 @@
+Purpose : Implementation Bot
+ID : matrixed
+Endpoint : https://api-testnet.bybit.com
+Launched on : 2022-08-04 18:39:02.858867
+Balance : 60217.257257 USDT
+------------------------------
+
+- 04/08/2022, 18:47:49:412738 : request by 127.0.0.1
+- 04/08/2022, 18:47:49:413735 : Request not made by TradingView authorized ip list
+Purpose : Implementation Bot
+ID : matrixed
+Endpoint : https://api-testnet.bybit.com
+Launched on : 2022-08-04 18:48:28.463564
+Balance : 60217.257257 USDT
+------------------------------
+
+- 04/08/2022, 18:48:30:046640 : request by 127.0.0.1
+- 04/08/2022, 18:48:30:046640 : Request not made by TradingView authorized ip list
+Purpose : Implementation Bot
+ID : matrixed
+Endpoint : https://api-testnet.bybit.com
+Launched on : 2022-08-04 18:49:08.377813
+Balance : 60217.257257 USDT
+------------------------------
+
+- 04/08/2022, 18:49:09:316007 : request by 127.0.0.1
+- 04/08/2022, 18:49:09:317005 : Request not made by TradingView authorized ip list
+- 04/08/2022, 18:49:09:317005 : Request of Buy on BTCUSDT pair
+Purpose : Implementation Bot
+ID : matrixed
+Endpoint : https://api-testnet.bybit.com
+Launched on : 2022-08-04 18:50:39.178592
+Balance : 60117.19844144 USDT
+------------------------------
+
+- 04/08/2022, 18:50:40:372946 : request by 127.0.0.1
+- 04/08/2022, 18:50:40:372946 : Request not made by TradingView authorized ip list
+- 04/08/2022, 18:50:40:372946 : Request of Buy on BTCUSDT pair

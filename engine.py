@@ -11,9 +11,8 @@ app = Flask(__name__)
 @app.route('/atmnewtrade',methods=['POST'])
 def develinput():
     auth_ip = ["REDACTED","REDACTED","REDACTED"]
-    data = request.json
     ip = request.remote_addr
-    g.last_request = request
+    g.last_request = request.json
     bot.log("request by {}".format(ip))
     if (ip not in auth_ip):
         bot.log("Request not made by TradingView authorized ip list")
@@ -28,7 +27,7 @@ def after_req_process(response):
     print("after_request executing! BEDORE")
     if(bot.in_trade == False):
         bot.in_trade == True
-        bot.thread.setDaemon()
+        bot.open_from_data(g.last_request)
     else:
         bot.log("Already in trade")
     print("after_request executing!")

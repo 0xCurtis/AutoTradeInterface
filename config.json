@@ -1,22 +1,31 @@
 {
     "creds" : {
-        "api_key":"REDACTED",
-        "api_secret":"REDACTED"
+        "api_key":"LWyv5863GH22Hr6g8h",
+        "api_secret":"3kDLvu36DaHqmcsKVjazOHUyJma2MjvVGAEK"
     },
     "parameters" : {
         "endpoint":"https://api-testnet.bybit.com",
+        "stoploss": 2,
+        "takeprofit": 2,
         "trailing_sl" : {
-            "used" : true,
+            "used" : false,
             "every_preset": "0.15,0.25,0.35,0.45,0.55,0.65",
-            "up_to_preset": "0.05,0.15,0.20,0.35,0.40,0.50"
+            "up_to_preset": "0.05,0.15,0.20,0.35,0.40,0.50",
+            "every_relative":"0.1/0.05"
+        },
+        "leverage": 5,
+        "size": {
+            "flat": true,
+            "size": 100,
+            "max": 5000
         }
     },
     "logging": {
         "logging": true,
-        "id": "REDACTED",
+        "id": "matrixed",
         "desc": "Implementation Bot"
     },
     "network" : {
-        "port": 0
+        "port": 6670
     }
 }

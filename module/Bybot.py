@@ -25,6 +25,9 @@ class ByBot:
                 self.max_size = cfg['parameters']['size']['max']
                 self.flat = cfg['parameters']['size']['flat']
                 self.size = cfg['parameters']['size']['size']
+                self.sl = cfg['parameters']['stoploss']
+                self.tp = cfg['parameters']['takeprofit']
+
                 self.logpath = "./logs/{}".format(self.id)
                 self.logfile = self.logpath + "/logging.txt"
                 self.make_log_header()
@@ -75,14 +78,15 @@ class ByBot:
             balance = self.get_balance()
             qty_in_usd = balance*(qty_in_usd/100)
         qty_in_usd = min(self.size, self.max_size)
-        self.open_perp_order(pair=data['pair'], side=data['side'], qty_in_usd=qty_in_usd, lever=self.leverage, flat=True)
+        self.open_perp_order(pair=data['pair'], side=data['side'], qty_in_usd=qty_in_usd, lever=self.leverage, flat=True sl=self.sl, tp=self.tp)
 
     def open_perp_order(self, pair="", side="", qty_in_usd=0, lever=1, flat=True, sl=None, tp=None):
         l_price = self.get_last_price(pair)
         quantity = round((qty_in_usd / l_price) * lever, 5)
-        #stop = l_price * 0.99 if side == "Buy" else l_price * 1.01
-        take = None
-        stop = None
+        if sl != None:
+            stop = l_price * (1 - sl/100) if side == "Buy" else l_price * (1 + sl/100)
+        if tp != None:
+            take = l_price * 1 + (tp/100) if side == "Buy" else l_price * 1 - (tp/100)
         self.set_margin(buy=lever, sell=lever, pair=pair)
         
         res = self.session.place_active_order(
@@ -93,8 +97,8 @@ class ByBot:
             time_in_force="GoodTillCancel",
             reduce_only=False,
             close_on_trigger=False,
-            stop_loss=stop,
-            take_profit=take
+            take_profit=take,
+            stop_loss=stop
             )
         self.in_trade = True
         return res
