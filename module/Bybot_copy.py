@@ -146,9 +146,11 @@ class ByBot:
             logger.error(f"Could not open order - {e}", exc_info=True)
             return
 
-        def __repr__(self) -> str:
-            return f"ByBot v0.1\n" \
-                   f"\tEndpoint: {self.endpoint}\n" \
-                   f"\tID: {self.id}\n" \
-                   f"\tLogpath: {self.log_path}\n" \
-                   f"\tDescription: {self.desc}"
+    def __repr__(self) -> str:
+        return  '-'*30 + '\n' \
+                f"ByBot v0.1\n" \
+                f"Endpoint: {self.endpoint}\n" \
+                f"ID: {self.id}\n" \
+                f"Logpath: {self.log_path}\n" \
+                f"Description: {self.desc}\n" \
+                + '-'*30
