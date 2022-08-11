@@ -1,30 +1,37 @@
 import json
 import logging
-import pathlib
 from datetime import datetime
+from distutils.debug import DEBUG
 from logging.handlers import TimedRotatingFileHandler
 from threading import Thread
 
 import pybit.usdt_perpetual
+from rich.logging import RichHandler
 from rich.traceback import install
 
 install()
-logging.basicConfig(
-    format='%(asctime)s - %(filename)s[line:%(lineno)d] - %(levelname)s - %(message)s',
-    level=logging.INFO,
-    datefmt='%d-%d-%Y %H:%M:%S')
-logger = logging.getLogger()
 
+logging.addLevelName(11, 'RUN')
+log = logging.getLogger('syslog')
+log.setLevel(logging.DEBUG)
+
+console = RichHandler()
+console.setLevel(logging.INFO)
+log.addHandler(console)
+
+a = 0/0
 class ByBot:
     def __init__(self) -> None:
         self.get_config()
         self.set_logger()
-        self.log(f"ByBot initialized - {self.id}")
-        self.log(f"Purpose: {self.desc}\n"
-            f"Endpoint: {self.endpoint}\n"
-            f"Launch date: {datetime.now()}\n"
-            f"Balance: {self.get_balance()} USDT\n"
-            f"{'-'*30}\n")
+        log.info(f"ByBot initialized - {self.id}")
+        log.log(11, '-'*30)
+        log.log(11, f"ByBot initialized - {self.id}")
+        log.log(11, f"Purpose: {self.desc}")
+        log.log(11, f"Endpoint: {self.endpoint}")
+        log.log(11, f"Launch date: {datetime.now()}")
+        log.log(11, f"Balance: {self.get_balance()}")
+        log.log(11, '-'*30)
 
     def get_config(self):
         try:
@@ -49,25 +56,22 @@ class ByBot:
                 self.in_trade = False
                 self.thread = Thread(target=self.order_manager, daemon=True)
         except Exception as e:
-            logger.error(f"Could not get config - {e}")
+            log.error(f"Could not get config - {e}")
             exit(84)
 
     def set_logger(self):
-        self.logger = logging.getLogger(self.id)
-        self.log_path = f"./logs/{self.id}"
-        self.log_handle = TimedRotatingFileHandler(self.log_path, when='midnight', interval=1, backupCount=4)
-        self.log_handle.suffix = "%Y-%m-%d.log"
-        self.log_handle.setFormatter(logging.Formatter(
+        log_path = f"./logs/{self.id}.log"
+        fh = TimedRotatingFileHandler(log_path, when='midnight', interval=1, backupCount=4)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter(
             '%(asctime)s - %(levelname)s - %(message)s',
             datefmt='%H:%M:%S'))
-        self.log_handle.setLevel(logging.INFO)
-        self.logger.addHandler(self.log_handle)
-
-    def log(self, msg):
-        self.logger.info(msg)
+        fh.rotation_filename = '{self.id}'
+        fh.suffix = "%Y-%m-%d.log"
+        log.addHandler(fh)
 
     def order_manager(self):
-        self.log(f"Order manager started")
+        log.debug(f"Order manager started")
 
     def get_balance(self):
         return self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
