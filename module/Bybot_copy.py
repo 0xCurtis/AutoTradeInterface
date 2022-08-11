@@ -59,8 +59,8 @@ class ByBot:
 
     def add_log_handle(self):
         logging.addLevelName(11, 'RUN')
-        log_path = f"./logs/{self.id}.log"
-        fh = TimedRotatingFileHandler(log_path, when='midnight', interval=1, backupCount=4)
+        self.log_path = f"./logs/{self.id}.log"
+        fh = TimedRotatingFileHandler(self.log_path, when='midnight', interval=1, backupCount=4)
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(logging.Formatter(
             '%(asctime)s - %(levelname)s - %(message)s',
@@ -79,3 +79,76 @@ class ByBot:
     def log(self, msg):
         logger.log(11, msg)
 
+    def get_last_price(self, pair):
+        self.last_price = self.session.public_trading_records(
+            symbol=pair,
+            limit=1)['result']['records'][0]['price']
+        return self.last_price
+
+    def set_margin(self, buy=1, sell=1, pair=""):
+        if pair == "":
+            return
+        try:
+            self.log(f"Setting leverage for {pair} to {buy}x{sell}")
+            self.session.set_leverage(
+                symbol=pair,
+                buy_leverage=buy,
+                sell_leverage=sell)
+        except Exception as e:
+            logger.error(f"Could not set leverage - {e}", exc_info=True)
+            pass
+
+    def parse_order_data(self, data):
+        self.log(f"Parsing order data")
+        self.log(f"{data['side']} request on {data['pair']}")
+        if self.flat == False:
+            balance = self.get_balance()
+            logger.warning('# qty_in_usd non set ???? check if == 0???')
+            qty_in_usd = balance * (qty_in_usd / 100)
+        qty_in_usd = min(self.size, self.max_size)
+        self.open_perp_order(
+            pair=data['pair'],
+            side=data['side'],
+            qty_in_usd=qty_in_usd,
+            lever=self.leverage,
+            flat=True,
+            sl=self.sl,
+            tp=self.tp)
+
+    def open_perp_order(self, pair="", side="", qty_in_usd=0, lever=1, flat=True, sl=None, tp=None):
+        self.log(f"Opening order")
+        self.log(f"{pair} {side} {qty_in_usd} {lever} {flat} {sl} {tp}")
+        if pair == "" or side == "" or qty_in_usd == 0 or lever == 0:
+            logger.warning('Wrong order parameters')
+            return
+        try:
+            l_price = self.get_last_price(pair)
+            quantity = round((qty_in_usd / l_price) * lever, 5)
+            if sl != None:
+                stop = l_price * (1 - sl/100) if side == "Buy" else l_price * (1 + sl/100)
+            if tp != None:
+                take = l_price * 1 + (tp/100) if side == "Buy" else l_price * 1 - (tp/100)
+            self.set_margin(buy=lever, sell=lever, pair=pair)
+
+            res = self.session.place_active_order(
+                symbol=pair,
+                side=side,
+                order_type="Market",
+                qty=quantity,
+                time_in_force="GoodTillCancel",
+                reduce_only=False,
+                close_on_trigger=False,
+                take_profit=take,
+                stop_loss=stop)
+            self.in_trade = True
+            return res
+        except Exception as e:
+            logger.error(f"Could not open order - {e}", exc_info=True)
+            return
+
+        def __repr__(self) -> str:
+            return f"ByBot v0.1\n" \
+                   f"\tEndpoint: {self.endpoint}\n" \
+                   f"\tID: {self.id}\n" \
+                   f"\tLogpath: {self.log_path}\n" \
+                   f"\tDescription: {self.desc}"
