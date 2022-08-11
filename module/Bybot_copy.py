@@ -11,27 +11,25 @@ from rich.traceback import install
 
 install()
 
-logging.addLevelName(11, 'RUN')
-log = logging.getLogger('syslog')
-log.setLevel(logging.DEBUG)
+logger = logging.getLogger('syslog')
+logger.setLevel(logging.DEBUG)
 
 console = RichHandler()
 console.setLevel(logging.INFO)
-log.addHandler(console)
+logger.addHandler(console)
 
-a = 0/0
 class ByBot:
     def __init__(self) -> None:
         self.get_config()
-        self.set_logger()
-        log.info(f"ByBot initialized - {self.id}")
-        log.log(11, '-'*30)
-        log.log(11, f"ByBot initialized - {self.id}")
-        log.log(11, f"Purpose: {self.desc}")
-        log.log(11, f"Endpoint: {self.endpoint}")
-        log.log(11, f"Launch date: {datetime.now()}")
-        log.log(11, f"Balance: {self.get_balance()}")
-        log.log(11, '-'*30)
+        self.add_log_handle()
+        logger.info(f"ByBot initialized - {self.id}")
+        self.log('-'*30)
+        self.log(f"ByBot initialized - {self.id}")
+        self.log(f"Purpose: {self.desc}")
+        self.log(f"Endpoint: {self.endpoint}")
+        self.log(f"Launch date: {datetime.now()}")
+        self.log(f"Balance: {self.get_balance()}")
+        self.log('-'*30)
 
     def get_config(self):
         try:
@@ -56,10 +54,11 @@ class ByBot:
                 self.in_trade = False
                 self.thread = Thread(target=self.order_manager, daemon=True)
         except Exception as e:
-            log.error(f"Could not get config - {e}")
+            logger.error(f"Could not get config - {e}", exc_info=True)
             exit(84)
 
-    def set_logger(self):
+    def add_log_handle(self):
+        logging.addLevelName(11, 'RUN')
         log_path = f"./logs/{self.id}.log"
         fh = TimedRotatingFileHandler(log_path, when='midnight', interval=1, backupCount=4)
         fh.setLevel(logging.DEBUG)
@@ -68,10 +67,15 @@ class ByBot:
             datefmt='%H:%M:%S'))
         fh.rotation_filename = '{self.id}'
         fh.suffix = "%Y-%m-%d.log"
-        log.addHandler(fh)
+        logger.addHandler(fh)
 
     def order_manager(self):
-        log.debug(f"Order manager started")
+        self.log(f"Order manager started")
 
     def get_balance(self):
-        return self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
+        self.balance = self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
+        return self.balance
+
+    def log(self, msg):
+        logger.log(11, msg)
+
