@@ -38,10 +38,12 @@ class ByBot:
         except Exception as e:
             print("Error while initialising the bot - {}".format(e))
             exit(84)
+    
     def order_manager(self):
         for a in range(500):
             time.sleep(0.1)
             print(a)
+    
     def make_log_header(self):
         balance = self.get_balance()
         with open(self.logfile, 'a') as log:
@@ -78,7 +80,7 @@ class ByBot:
             balance = self.get_balance()
             qty_in_usd = balance*(qty_in_usd/100)
         qty_in_usd = min(self.size, self.max_size)
-        self.open_perp_order(pair=data['pair'], side=data['side'], qty_in_usd=qty_in_usd, lever=self.leverage, flat=True sl=self.sl, tp=self.tp)
+        self.open_perp_order(pair=data['pair'], side=data['side'], qty_in_usd=qty_in_usd, lever=self.leverage, flat=True, sl=self.sl, tp=self.tp)
 
     def open_perp_order(self, pair="", side="", qty_in_usd=0, lever=1, flat=True, sl=None, tp=None):
         l_price = self.get_last_price(pair)

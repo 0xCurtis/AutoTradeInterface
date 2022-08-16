@@ -24,14 +24,11 @@ def develinput():
     
 @app.after_request
 def after_req_process(response):
-    print("after_request executing! BEDORE")
     if(bot.in_trade == False):
         bot.in_trade == True
-        bot.open_from_data(g.last_request)
+        bot.parse_order_data(g.last_request)
     else:
         bot.log("Already in trade")
-    print("after_request executing!")
-    return;
 
 @app.before_first_request
 def info():
@@ -39,7 +36,6 @@ def info():
 
 if __name__ == "__main__":
     os.system('cls' if os.name == 'nt' else 'clear')
-    os.system('title ATM V0.1')
     bot = Bybot.ByBot()
     print(pyfiglet.figlet_format("ATM V0.1", font="slant"))
     app.run(debug=False, host="localhost", port=bot.port)
