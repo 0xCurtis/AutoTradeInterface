@@ -95,7 +95,7 @@ class ByBot:
         # TODO check request (add try)
         self.last_price = self.session.public_trading_records(
             symbol=pair,
-            limit=1)['result']['records'][0]['price']
+            limit=1)['result'][0]['price']
         return self.last_price
 
     def set_margin(self, buy=1, sell=1, pair=""):
@@ -107,9 +107,7 @@ class ByBot:
                 symbol=pair,
                 buy_leverage=buy,
                 sell_leverage=sell)
-        except Exception as e:
-            # TODO add fallback
-            error(f"Could not set leverage - {e}")
+        except:
             pass
 
     def parse_order_data(self, data):
@@ -142,11 +140,10 @@ class ByBot:
             # TODO add default values for stop and take
             # TODO opti if else
             if sl is not None:
-                stop = l_price * (1 - sl / 100) if side == "Buy" else l_price * (1 + sl / 100)
+                stop = round(l_price * (1 - sl / 100) if side == "Buy" else l_price * (1 + sl / 100),4)
             if tp is not None:
-                take = l_price * 1 + (tp / 100) if side == "Buy" else l_price * 1 - (tp / 100)
+                take = round(l_price * (1 + tp / 100) if side == "Buy" else l_price * (1 - tp / 100),4)
             self.set_margin(buy=lever, sell=lever, pair=pair)
-
             res = self.session.place_active_order(
                 symbol=pair,
                 side=side,
@@ -158,6 +155,7 @@ class ByBot:
                 take_profit=take,
                 stop_loss=stop)
             self.in_trade = True
+            log(self.session.my_position(pair=pair)['result'][0])
             return res
         except Exception as e:
             error(f"Could not open order - {e}")

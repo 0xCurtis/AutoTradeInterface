@@ -1,5 +1,5 @@
 from datetime import date
-from module import Bybot
+from module import Bybot as bb
 from flask import Flask, request, json, g
 import os
 import pyfiglet
@@ -19,27 +19,17 @@ def develinput():
         bb.error("Request not made by TradingView authorized ip list")
         # return "Not Authorized"
     if not bot.in_trade:
+        bot.parse_order_data(g.last_request)
         return "Bien bouffon t'as fait ta requete"
     else:
-        return "Deja en trade"
-
-
-@app.after_request
-def after_req_process(response):
-    bb.info("after_request executing! BEDORE")
-    if not bot.in_trade:
-        bot.parse_order_data(g.last_request)
-    else:
         bb.log("Already in trade")
-    bb.info("after_request executing!")
-    return
+        return "Deja en trade"
+        
 
 
 if __name__ == "__main__":
     try:
         os.system('cls' if os.name == 'nt' else 'clear')
-        # os.system('title ATM V0.1')
-        bb = Bybot
         bb.info('\n'+pyfiglet.figlet_format("ATM V0.1", font="slant"))
         bot = bb.ByBot()
         app.run(debug=False, host="localhost", port=bot.port)
