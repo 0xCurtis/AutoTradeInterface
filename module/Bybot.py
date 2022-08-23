@@ -17,48 +17,58 @@ console = RichHandler()
 console.setLevel(logging.INFO)
 logger.addHandler(console)
 
+
+def log(msg):
+    logger.log(11, msg)
+
+
+def error(msg, info=True):
+    logger.error(msg, exc_info=info)
+
+
+def info(msg):
+    logger.info(msg)
+
+
 class ByBot:
     def __init__(self) -> None:
-        self.get_config()
-        self.add_log_handle()
-        logger.info(f"ByBot initialized - {self.id}")
-        self.log('-'*30)
-        self.log(f"ByBot initialized - {self.id}")
-        self.log(f"Purpose: {self.desc}")
-        self.log(f"Endpoint: {self.endpoint}")
-        self.log(f"Launch date: {datetime.now()}")
-        self.log(f"Balance: {self.get_balance()}")
-        self.log('-'*30)
-
-    def get_config(self):
         try:
             with open('config.json', 'r') as cfg:
                 cfg = json.load(cfg)
                 self._api_key = cfg['creds']['api_key']
                 self._api_secret = cfg['creds']['api_secret']
                 self.endpoint = cfg['parameters']['endpoint']
-                self.session = pybit.usdt_perpetual.HTTP(endpoint=self.endpoint, api_key=self._api_key, api_secret=self._api_secret)
-
+                self.session = pybit.usdt_perpetual.HTTP(endpoint=self.endpoint, api_key=self._api_key,
+                                                         api_secret=self._api_secret)
                 self.id = cfg['logging']['id']
                 self.desc = cfg['logging']['desc']
                 self.port = cfg['network']['port']
-
                 self.leverage = cfg['parameters']['leverage']
                 self.max_size = cfg['parameters']['size']['max']
                 self.flat = cfg['parameters']['size']['flat']
                 self.size = cfg['parameters']['size']['size']
                 self.sl = cfg['parameters']['stoploss']
                 self.tp = cfg['parameters']['takeprofit']
-
                 self.in_trade = False
                 self.thread = Thread(target=self.order_manager, daemon=True)
+                self.log_path = f"./logs/{self.id}.log"
+                self.balance = 0
+                self.last_price = -1
         except Exception as e:
-            logger.error(f"Could not get config - {e}", exc_info=True)
+            error(f"Could not get config - {e}")
             exit(84)
+        self.add_log_handle()
+        info(f"ByBot initialized - {self.id}")
+        log('-' * 30)
+        log(f"ByBot initialized - {self.id}")
+        log(f"Purpose: {self.desc}")
+        log(f"Endpoint: {self.endpoint}")
+        log(f"Launch date: {datetime.now()}")
+        log(f"Balance: {self.get_balance()}")
+        log('-' * 30)
 
     def add_log_handle(self):
         logging.addLevelName(11, 'RUN')
-        self.log_path = f"./logs/{self.id}.log"
         fh = TimedRotatingFileHandler(self.log_path, when='midnight', interval=1, backupCount=4)
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(logging.Formatter(
@@ -68,14 +78,11 @@ class ByBot:
         logger.addHandler(fh)
 
     def order_manager(self):
-        self.log(f"Order manager started")
+        log(f"Order manager started")
 
     def get_balance(self):
         self.balance = self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
         return self.balance
-
-    def log(self, msg):
-        logger.log(11, msg)
 
     def get_last_price(self, pair):
         self.last_price = self.session.public_trading_records(
@@ -87,21 +94,21 @@ class ByBot:
         if pair == "":
             return
         try:
-            self.log(f"Setting leverage for {pair} to {buy}x{sell}")
+            log(f"Setting leverage for {pair} to {buy}x{sell}")
             self.session.set_leverage(
                 symbol=pair,
                 buy_leverage=buy,
                 sell_leverage=sell)
         except Exception as e:
-            logger.error(f"Could not set leverage - {e}", exc_info=True)
+            error(f"Could not set leverage - {e}")
             pass
 
     def parse_order_data(self, data):
-        self.log(f"Parsing order data")
-        self.log(f"{data['side']} request on {data['pair']}")
-        if self.flat == False:
+        log(f"Parsing order data")
+        log(f"{data['side']} request on {data['pair']}")
+        if not self.flat:
             balance = self.get_balance()
-            logger.warning('# qty_in_usd non set ???? check if == 0???')
+            # TODO qty_in_usd must be set (unsolved reference)
             qty_in_usd = balance * (qty_in_usd / 100)
         qty_in_usd = min(self.size, self.max_size)
         self.open_perp_order(
@@ -114,18 +121,19 @@ class ByBot:
             tp=self.tp)
 
     def open_perp_order(self, pair="", side="", qty_in_usd=0, lever=1, flat=True, sl=None, tp=None):
-        self.log(f"Opening order")
-        self.log(f"{pair} {side} {qty_in_usd} {lever} {flat} {sl} {tp}")
+        log(f"Opening order")
+        log(f"{pair} {side} {qty_in_usd} {lever} {flat} {sl} {tp}")
         if pair == "" or side == "" or qty_in_usd == 0 or lever == 0:
             logger.warning('Wrong order parameters')
             return
         try:
             l_price = self.get_last_price(pair)
             quantity = round((qty_in_usd / l_price) * lever, 5)
-            if sl != None:
-                stop = l_price * (1 - sl/100) if side == "Buy" else l_price * (1 + sl/100)
-            if tp != None:
-                take = l_price * 1 + (tp/100) if side == "Buy" else l_price * 1 - (tp/100)
+            # TODO add default values for stop and take
+            if sl is not None:
+                stop = l_price * (1 - sl / 100) if side == "Buy" else l_price * (1 + sl / 100)
+            if tp is not None:
+                take = l_price * 1 + (tp / 100) if side == "Buy" else l_price * 1 - (tp / 100)
             self.set_margin(buy=lever, sell=lever, pair=pair)
 
             res = self.session.place_active_order(
@@ -141,14 +149,14 @@ class ByBot:
             self.in_trade = True
             return res
         except Exception as e:
-            logger.error(f"Could not open order - {e}", exc_info=True)
+            error(f"Could not open order - {e}")
             return
 
     def __repr__(self) -> str:
-        return  '-'*30 + '\n' \
-                f"ByBot v0.1\n" \
-                f"Endpoint: {self.endpoint}\n" \
-                f"ID: {self.id}\n" \
-                f"Logpath: {self.log_path}\n" \
-                f"Description: {self.desc}\n" \
-                + '-'*30
+        return '-' * 30 + '\n' \
+                          f"ByBot v0.1\n" \
+                          f"Endpoint: {self.endpoint}\n" \
+                          f"ID: {self.id}\n" \
+                          f"Log-path: {self.log_path}\n" \
+                          f"Description: {self.desc}\n" \
+               + '-' * 30
