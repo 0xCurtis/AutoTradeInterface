@@ -35,20 +35,17 @@ def after_req_process(response):
     return
 
 
-# TODO remove deprecated function
-@app.before_first_request
-def info():
-    bb.info(repr(bb))
-
-
 if __name__ == "__main__":
     try:
         os.system('cls' if os.name == 'nt' else 'clear')
         # os.system('title ATM V0.1')
         bb = Bybot
+        bb.info('\n'+pyfiglet.figlet_format("ATM V0.1", font="slant"))
         bot = bb.ByBot()
-        bb.info(pyfiglet.figlet_format("ATM V0.1", font="slant"))
         app.run(debug=False, host="localhost", port=bot.port)
+        bb.info('\n'+repr(bot))
+        bb.info("Bot stopped")
+        exit(0)
     except KeyboardInterrupt:
-        Bybot.info("Closing bot..")
+        Bybot.info("Bot stopped during setup")
         exit(0)
