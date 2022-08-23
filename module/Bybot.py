@@ -22,8 +22,8 @@ def log(msg):
     logger.log(11, msg)
 
 
-def error(msg, info=True):
-    logger.error(msg, exc_info=info)
+def error(msg, e_info=True):
+    logger.error(msg, exc_info=e_info)
 
 
 def info(msg):
@@ -53,11 +53,11 @@ class ByBot:
                 self.in_trade = False
                 self.thread = Thread(target=self.order_manager, daemon=True)
                 self.log_path = f"./logs/{self.id}.log"
-                self.balance = 0
+                self.balance = self.get_balance()
                 self.last_price = -1
         except Exception as e:
-            error(f"Could not get config - {e}")
-            exit(84)
+            error(f"Could not get config", False)
+            raise
         self.add_log_handle()
         info(f"ByBot initialized - {self.id}")
         log('-' * 30)
@@ -84,7 +84,11 @@ class ByBot:
 
     def get_balance(self):
         # TODO add fallback
-        self.balance = self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
+        try:
+            self.balance = self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
+        except Exception as e:
+            error(f"Couldn't get balance, check API key", False)
+            raise
         return self.balance
 
     def get_last_price(self, pair):

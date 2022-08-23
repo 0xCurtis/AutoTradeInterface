@@ -42,9 +42,13 @@ def info():
 
 
 if __name__ == "__main__":
-    os.system('cls' if os.name == 'nt' else 'clear')
-    # os.system('title ATM V0.1')
-    bb = Bybot
-    bot = bb.ByBot()
-    bb.info(pyfiglet.figlet_format("ATM V0.1", font="slant"))
-    app.run(debug=False, host="localhost", port=bot.port)
+    try:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        # os.system('title ATM V0.1')
+        bb = Bybot
+        bot = bb.ByBot()
+        bb.info(pyfiglet.figlet_format("ATM V0.1", font="slant"))
+        app.run(debug=False, host="localhost", port=bot.port)
+    except KeyboardInterrupt:
+        Bybot.info("Closing bot..")
+        exit(0)
