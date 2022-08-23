@@ -38,6 +38,7 @@ class ByBot:
                 self._api_key = cfg['creds']['api_key']
                 self._api_secret = cfg['creds']['api_secret']
                 self.endpoint = cfg['parameters']['endpoint']
+                # TODO check session state
                 self.session = pybit.usdt_perpetual.HTTP(endpoint=self.endpoint, api_key=self._api_key,
                                                          api_secret=self._api_secret)
                 self.id = cfg['logging']['id']
@@ -78,13 +79,16 @@ class ByBot:
         logger.addHandler(fh)
 
     def order_manager(self):
+        # TODO implementer le order manager
         log(f"Order manager started")
 
     def get_balance(self):
+        # TODO add fallback
         self.balance = self.session.get_wallet_balance(coin="USDT")['result']['USDT']['available_balance']
         return self.balance
 
     def get_last_price(self, pair):
+        # TODO check request (add try)
         self.last_price = self.session.public_trading_records(
             symbol=pair,
             limit=1)['result']['records'][0]['price']
@@ -100,6 +104,7 @@ class ByBot:
                 buy_leverage=buy,
                 sell_leverage=sell)
         except Exception as e:
+            # TODO add fallback
             error(f"Could not set leverage - {e}")
             pass
 
@@ -111,6 +116,7 @@ class ByBot:
             # TODO qty_in_usd must be set (unsolved reference)
             qty_in_usd = balance * (qty_in_usd / 100)
         qty_in_usd = min(self.size, self.max_size)
+        # TODO check request (add try)
         self.open_perp_order(
             pair=data['pair'],
             side=data['side'],
@@ -130,6 +136,7 @@ class ByBot:
             l_price = self.get_last_price(pair)
             quantity = round((qty_in_usd / l_price) * lever, 5)
             # TODO add default values for stop and take
+            # TODO opti if else
             if sl is not None:
                 stop = l_price * (1 - sl / 100) if side == "Buy" else l_price * (1 + sl / 100)
             if tp is not None:
