@@ -1,10 +1,12 @@
+#%%
 import json
 import logging
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
 from threading import Thread
+from time import sleep
 
-import pybit.usdt_perpetual
+from pybit import usdt_perpetual
 from rich.logging import RichHandler
 from rich.traceback import install
 
@@ -39,8 +41,10 @@ class ByBot:
                 self._api_secret = cfg['creds']['api_secret']
                 self.endpoint = cfg['parameters']['endpoint']
                 # TODO check session state
-                self.session = pybit.usdt_perpetual.HTTP(endpoint=self.endpoint, api_key=self._api_key,
-                                                         api_secret=self._api_secret)
+                self.session = usdt_perpetual.HTTP(endpoint=self.endpoint, api_key=self._api_key,
+                                                   api_secret=self._api_secret)
+                # print(self.session.user_leverage())
+                self.ws = usdt_perpetual.WebSocket(test=True, api_key=self._api_key, api_secret=self._api_secret)
                 self.id = cfg['logging']['id']
                 self.desc = cfg['logging']['desc']
                 self.port = cfg['network']['port']
@@ -53,6 +57,7 @@ class ByBot:
                 self.in_trade = False
                 self.thread = Thread(target=self.order_manager, daemon=True)
                 self.log_path = f"./logs/{self.id}.log"
+                self.position = self.get_position()
                 self.balance = self.get_balance()
                 self.last_price = -1
         except Exception as e:
@@ -81,6 +86,11 @@ class ByBot:
     def order_manager(self):
         # TODO implementer le order manager
         log(f"Order manager started")
+        # order book stream data
+        self.ws.orderbook_25_stream(print, "BTCUSDT")
+        while True:
+            # keeps ws alive
+            sleep(1)
 
     def get_balance(self):
         # TODO add fallback
@@ -111,18 +121,21 @@ class ByBot:
             pass
 
     def parse_order_data(self, data):
-        log(f"Parsing order data")
+        log("Parsing order data")
         log(f"{data['side']} request on {data['pair']}")
+        # !flat == % of wallet
+        order_size = self.size
         if not self.flat:
+            if not 0 < order_size < 20:
+                error(f"Order size is incorrect {order_size}", False)
+                raise
             balance = self.get_balance()
-            # TODO qty_in_usd must be set (unsolved reference)
-            qty_in_usd = balance * (qty_in_usd / 100)
-        qty_in_usd = min(self.size, self.max_size)
-        # TODO check request (add try)
+            order_size = balance * (order_size / 100)
+        order_size = min(order_size, self.max_size, self.get_balance())
         self.open_perp_order(
             pair=data['pair'],
             side=data['side'],
-            qty_in_usd=qty_in_usd,
+            qty_in_usd=order_size,
             lever=self.leverage,
             flat=True,
             sl=self.sl,
@@ -140,9 +153,9 @@ class ByBot:
             # TODO add default values for stop and take
             # TODO opti if else
             if sl is not None:
-                stop = round(l_price * (1 - sl / 100) if side == "Buy" else l_price * (1 + sl / 100),4)
+                stop = round(l_price * (1 - sl / 100) if side == "Buy" else l_price * (1 + sl / 100), 4)
             if tp is not None:
-                take = round(l_price * (1 + tp / 100) if side == "Buy" else l_price * (1 - tp / 100),4)
+                take = round(l_price * (1 + tp / 100) if side == "Buy" else l_price * (1 - tp / 100), 4)
             self.set_margin(buy=lever, sell=lever, pair=pair)
             res = self.session.place_active_order(
                 symbol=pair,
@@ -169,3 +182,12 @@ class ByBot:
                           f"Log-path: {self.log_path}\n" \
                           f"Description: {self.desc}\n" \
                + '-' * 30
+
+    def get_position(self):
+        try:
+            self.position = self.session.my_position(pair="BTCUSDT")['result'][0]
+            print(self.position)
+            return self.position
+        except Exception as e:
+            error(f"Could not get position - {e}")
+            raise
