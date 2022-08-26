@@ -10,19 +10,19 @@ app = Flask(__name__)
 # curl -i -X POST -H "Content-Type:application/json" -d "{\"pair\": \"BTCUSDT\", \"side\": \"Buy\"}" http://localhost:6670/open_order
 @app.route('/open_order', methods=['POST'])
 def new_order():
-    auth_ip = ["REDACTED", "REDACTED", "REDACTED"]
+    auth_ip = ["bybit ip_00", "bybit ip_01"]
     ip = request.remote_addr
     g.last_request = request.json
-    bb.log(f"request by {ip}")
+    bb.log(f"Incoming request from {ip}")
     if ip not in auth_ip:
-        bb.error("Request not made by TradingView authorized ip list", False)
+        bb.error("Unauthorized ip", False)
         # return "Not Authorized"
     if not bot.in_trade:
         bot.parse_order_data(g.last_request)
-        return "Bien bouffon t'as fait ta requete"
+        return "Request received"
     else:
-        bb.log("Already in trade")
-        return "Deja en trade"
+        bb.log("Request rejected  (already in trade)")
+        return "Request rejected (already in trade)"
 
 
 if __name__ == "__main__":
