@@ -43,7 +43,6 @@ class ByBot:
                 # TODO check session state
                 self.session = usdt_perpetual.HTTP(endpoint=self.endpoint, api_key=self._api_key,
                                                    api_secret=self._api_secret)
-                # print(self.session.user_leverage())
                 self.ws = usdt_perpetual.WebSocket(test=True, api_key=self._api_key, api_secret=self._api_secret)
                 self.id = cfg['logging']['id']
                 self.desc = cfg['logging']['desc']
@@ -55,9 +54,8 @@ class ByBot:
                 self.sl = cfg['parameters']['stoploss']
                 self.tp = cfg['parameters']['takeprofit']
                 self.in_trade = False
-                self.thread = Thread(target=self.order_manager, daemon=True)
+                self.thread = Thread(target=self.get_position, daemon=True)
                 self.log_path = f"./logs/{self.id}.log"
-                self.position = self.get_position()
                 self.balance = self.get_balance()
                 self.last_price = -1
         except Exception as e:
@@ -168,7 +166,8 @@ class ByBot:
                 take_profit=take,
                 stop_loss=stop)
             self.in_trade = True
-            log(self.session.my_position(pair=pair)['result'][0])
+            self.symbol = pair
+            self.thread.start()
             return res
         except Exception as e:
             error(f"Could not open order - {e}")
@@ -184,10 +183,15 @@ class ByBot:
                + '-' * 30
 
     def get_position(self):
-        try:
-            self.position = self.session.my_position(pair="BTCUSDT")['result'][0]
-            print(self.position)
-            return self.position
-        except Exception as e:
-            error(f"Could not get position - {e}")
-            raise
+        while self.in_trade:
+            try:
+                position = self.session.my_position(symbol=self.symbol)
+                size = position['result'][0]['size'] + position['result'][1]['size'] 
+                if(size == 0):
+                    self.in_trade == False
+                    log("Bot ready for a new trade")
+                sleep(3)
+            except Exception as e:
+                error(f"Could not get position - {e}")
+                raise
+        return
