@@ -186,10 +186,13 @@ class ByBot:
         while self.in_trade:
             try:
                 position = self.session.my_position(symbol=self.symbol)
-                size = position['result'][0]['size'] + position['result'][1]['size'] 
+                size = position['result'][0]['size'] + position['result'][1]['size']
+                # size == in a buy or sell position
+                # call trailing here mb ?
                 if size == 0:
                     self.in_trade = False
                     log("Bot ready for a new trade")
+                sleep(1)
             except Exception as e:
                 error(f"Could not get position - {e}")
                 raise
