@@ -33,6 +33,7 @@ def info(msg):
 
 class ByBot:
     def __init__(self) -> None:
+        self.symbol = None
         try:
             with open('config.json', 'r') as cfg:
                 cfg = json.load(cfg)
@@ -185,11 +186,14 @@ class ByBot:
     def get_position(self):
         while self.in_trade:
             try:
-                position = self.session.my_position(symbol=self.symbol)
-                size = position['result'][0]['size'] + position['result'][1]['size']
-                # size == in a buy or sell position
-                # call trailing here mb ?
-                if size == 0:
+                position = self.session.my_position(symbol=self.symbol)['result']
+                if position[0]['size']:
+                    # buy
+                    pass
+                elif position[1]['size']:
+                    # sell
+                    pass
+                else:
                     self.in_trade = False
                     log("Bot ready for a new trade")
                 sleep(1)
