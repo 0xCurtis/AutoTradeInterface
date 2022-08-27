@@ -18,16 +18,20 @@ def open_order():
         BB.error("Unauthorized ip", False)
         # return "Not Authorized"
     if bot.trading:
-        BB.log("Request rejected  (already in trade)")
+        bot.update()
+    if bot.trading:
+        BB.info("Request rejected  (already in trade)")
         return "Request rejected (already in trade)"
-    else:
-        r = request.json
-        try:
-            bot.open_order(r['side'], r['symbol'])
-        except NameError as e:
-            BB.error(f"Missing request parameter: {e}")
-            return f"Missing request parameter: {e}"
-        return "Request received"
+    r = request.json
+    try:
+        bot.open_order(r['side'], r['symbol'])
+    except NameError as e:
+        BB.error(f"Missing request parameter: {e}")
+        return f"Missing request parameter: {e}"
+    except BB.FailedRequestError:
+        BB.error("Request error")
+        return "Request error"
+    return "Request received"
 
 
 if __name__ == "__main__":
