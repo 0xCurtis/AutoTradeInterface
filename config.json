@@ -1,31 +1,19 @@
 {
-    "creds" : {
-        "api_key":"cOaVcu6n5Ih2iSkBpc",
-        "api_secret":"YKv2K01brMOOjMOuNM9FPbd0EGotnfZvmaEV"
-    },
-    "parameters" : {
-        "endpoint":"https://api-testnet.bybit.com",
-        "stoploss": 20,
-        "takeprofit": 20,
-        "trailing_sl" : {
-            "used" : false,
-            "every_preset": "0.15,0.25,0.35,0.45,0.55,0.65",
-            "up_to_preset": "0.05,0.15,0.20,0.35,0.40,0.50",
-            "every_relative":"0.1/0.05"
-        },
-        "leverage": 5,
-        "size": {
-            "flat": true,
-            "size": 100,
-            "max": 5000
-        }
-    },
-    "logging": {
-        "logging": true,
-        "id": "matrixed",
-        "desc": "Implementation Bot"
-    },
-    "network" : {
-        "port": 6670
-    }
+  "api": {
+    "key": "cOaVcu6n5Ih2iSkBpc",
+    "secret": "YKv2K01brMOOjMOuNM9FPbd0EGotnfZvmaEV"
+  },
+  "name": "matrixed",
+  "network": {
+    "endpoint": "https://api-testnet.bybit.com",
+    "host": "localhost",
+    "port": 6670
+  },
+  "order": {
+    "leverage": 5,
+    "margin": 2.0,
+    "max": 5000,
+    "size": 100,
+    "symbol": "BTCUSDT"
+  }
 }
