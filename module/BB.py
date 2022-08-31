@@ -103,7 +103,7 @@ class ByBot:
 
     def update(self):
         try:
-            self.balance = self.session.get_wallet_balance()
+            self.balance = self.session.get_wallet_balance()['result']['USDT']['available_balance']
             self.max = min(self.balance, self.max)
             position = self.session.my_position(symbol=self.symbol)['result']
             leverage = self.leverage
