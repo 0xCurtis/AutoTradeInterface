@@ -10,10 +10,10 @@
     "port": 6670
   },
   "order": {
-    "leverage": 5,
+    "leverage": 1,
     "margin": 2.0,
     "max": 5000,
-    "size": 100,
+    "size": 1,
     "symbol": "BTCUSDT"
   }
 }

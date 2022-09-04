@@ -61,6 +61,7 @@ class ByBot:
             self.symbol = order['symbol']
             self.session = usdt_perpetual.HTTP(endpoint=self.network['endpoint'], api_secret=api['secret'],
                                                api_key=api['key'])
+            self.log_path = f"./logs/{cfg['name']}.log"
             self.updater = Thread(target=self.update_engine, daemon=True)
             self.updater.start()
         except NameError as e:
@@ -72,9 +73,10 @@ class ByBot:
         if symbol != self.symbol:
             raise "Wrong symbol"
         price = self.session.public_trading_records(symbol=symbol, limit=1)['result'][0]['price']
-        qty = round((self.size / price) * self.leverage, 5)
+        exposure = self.size/100 * self.balance
+        qty = round((exposure / price) * self.leverage, 5)
         qty = min(self.max, qty)
-        trailing_stop = price * self.margin
+        trailing_stop = round(price * self.margin, 2)
         order = self.session.place_active_order(
             symbol=symbol,
             side=side,
@@ -99,12 +101,12 @@ class ByBot:
         info('Update engine started')
         while True:
             self.update()
-            sleep(1 * 60)
+            sleep(1 * 10)
 
     def update(self):
         try:
             self.balance = self.session.get_wallet_balance()['result']['USDT']['available_balance']
-            self.max = min(self.balance, self.max)
+            log(self.balance)
             position = self.session.my_position(symbol=self.symbol)['result']
             leverage = self.leverage
             if position[0]['leverage'] != leverage or position[1]['leverage'] != leverage:

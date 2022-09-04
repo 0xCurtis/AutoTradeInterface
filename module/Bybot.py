@@ -2,6 +2,7 @@ import json
 import logging
 from datetime import datetime
 from logging.handlers import TimedRotatingFileHandler
+from signal import raise_signal
 from threading import Thread
 from time import sleep
 
@@ -100,10 +101,13 @@ class ByBot:
         return self.balance
 
     def get_last_price(self, pair):
-        # TODO check request (add try)
-        self.last_price = self.session.public_trading_records(
-            symbol=pair,
-            limit=1)['result'][0]['price']
+        try:
+            self.last_price = self.session.public_trading_records(
+                symbol=pair,
+                limit=1)['result'][0]['price']
+        except:
+            error(f"Can't get last price of {pair} - Check internet connection")
+            raise
         return self.last_price
 
     def set_margin(self, buy=1, sell=1, pair=""):
@@ -138,7 +142,7 @@ class ByBot:
             lever=self.leverage,
             flat=True)
 
-    def open_perp_order(self, pair="", side="", qty_in_usd=0, lever=1, flat=True):
+    def open_perp_order(self, pair="", side="", qty_in_usd=0, lever=1, flat=True, stop=None, take=None):
         log(f"Opening order")
         log(f"{side} ${pair} -> {qty_in_usd} x{lever} | is flat:{flat} | sl:{self.sl} tp:{self.tp}")
         if pair == "" or side == "" or qty_in_usd == 0 or lever == 0:
@@ -147,8 +151,6 @@ class ByBot:
         try:
             l_price = self.get_last_price(pair)
             quantity = round((qty_in_usd / l_price) * lever, 5)
-            # TODO add default values for stop and take
-            # TODO opti if else
             if side == "Buy":
                 stop = round(l_price * (1 - self.sl / 100), 4)
                 take = round(l_price * (1 + self.tp / 100), 4)
@@ -187,13 +189,7 @@ class ByBot:
         while self.in_trade:
             try:
                 position = self.session.my_position(symbol=self.symbol)['result']
-                if position[0]['size']:
-                    # buy
-                    pass
-                elif position[1]['size']:
-                    # sell
-                    pass
-                else:
+                if position[0]['size'] + position[0]['size'] == 0:
                     self.in_trade = False
                     log("Bot ready for a new trade")
                 sleep(1)

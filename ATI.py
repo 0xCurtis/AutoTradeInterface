@@ -8,8 +8,7 @@ from module import BB
 app = Flask(__name__)
 authorized_ips = ["52.89.214.238", "34.212.75.30", "54.218.53.128", "52.32.178.7"]
 
-
-# curl -i -X POST -H "Content-Type:application/json" -d "{\"pair\": \"BTCUSDT\", \"symbol\": \"Buy\"}" http://localhost:6670/open_order
+# curl -i -X POST -H "Content-Type:application/json" -d "{\"symbol\": \"BTCUSDT\", \"side\": \"Buy\"}" http://localhost:6670/open_order
 @app.route('/open_order', methods=['POST'])
 def open_order():
     order_ip = request.remote_addr
