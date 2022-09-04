@@ -1,2 +1,3 @@
 logs/*
 module/__pycache__/*
+.idea
