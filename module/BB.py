@@ -67,7 +67,18 @@ class ByBot:
         except NameError as e:
             error(f"Config file error: {e}")
             raise
+        self.add_log_handle()
         info(f"Bot {self.name} ready")
+
+    def add_log_handle(self):
+        logging.addLevelName(11, 'RUN')
+        fh = TimedRotatingFileHandler(self.log_path, when='midnight', interval=1, backupCount=4)
+        fh.setLevel(logging.DEBUG)
+        fh.setFormatter(logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%H:%M:%S'))
+        fh.suffix = "%Y-%m-%d.log"
+        logger.addHandler(fh)
 
     def open_order(self, side, symbol):
         if symbol != self.symbol:
@@ -106,12 +117,13 @@ class ByBot:
     def update(self):
         try:
             self.balance = self.session.get_wallet_balance()['result']['USDT']['available_balance']
-            log(self.balance)
             position = self.session.my_position(symbol=self.symbol)['result']
             leverage = self.leverage
             if position[0]['leverage'] != leverage or position[1]['leverage'] != leverage:
                 self.session.set_leverage(symbol=self.symbol, buy_leverage=leverage, sell_leverage=leverage)
-            self.trading = position[0]['size'] + position[1]['size'] > 0
+            if self.trading == True and position[0]['size'] + position[1]['size'] <= 0:
+                self.trading = False
+                log("Bot ready for a new trade")
         except Exception:
             self.updating = False
             raise
