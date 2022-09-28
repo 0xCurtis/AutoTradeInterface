@@ -52,6 +52,7 @@ class ByBot:
             self.updating = False
             self.trading = False
             self.balance = 0
+            self.order_id = None
             self.name = cfg['name']
             self.network = cfg['network']
             self.leverage = order['leverage']
@@ -84,10 +85,14 @@ class ByBot:
         if symbol != self.symbol:
             raise "Wrong symbol"
         price = self.session.public_trading_records(symbol=symbol, limit=1)['result'][0]['price']
-        exposure = self.size/100 * self.balance
+        exposure = self.size * self.balance
         qty = round((exposure / price) * self.leverage, 5)
         qty = min(self.max, qty)
-        trailing_stop = round(price * self.margin, 2)
+        sl = price * 0.995 if side == "Buy" else price * 1.005
+        sl = round(sl, 4)
+        tp = price * 1.005 if side == "Buy" else price * 0.995
+        tp = round(tp, 4)
+        # trailing_stop = round(price * self.margin, 2)
         order = self.session.place_active_order(
             symbol=symbol,
             side=side,
@@ -95,17 +100,30 @@ class ByBot:
             qty=qty,
             time_in_force="GoodTillCancel",
             reduce_only=False,
-            close_on_trigger=False
+            close_on_trigger=False,
+            stop_loss=sl,
+            take_profit=tp
         )
         req_check(order)
-        limit = self.session.set_trading_stop(
-            symbol=symbol,
-            side=side,
-            trailing_stop=trailing_stop
-        )
-        req_check(limit)
+        # limit = self.session.set_trading_stop(
+        #     symbol=symbol,
+        #     side=side,
+        #     trailing_stop=trailing_stop
+        # )
+        # req_check(limit)
         self.trading = True
-        info('New order placed')
+        self.order_id = order['result']['order_id']
+        info(f'{side} order placed\n'
+             f'At: {price} with {qty} {symbol} for {exposure} USDT\n'
+             f'SL: {sl} TP: {tp}\n'
+             f'Order ID: {self.order_id}')
+
+    def close_order(self, symbol):
+        if symbol != self.symbol:
+            raise "Wrong symbol"
+        self.session.cancel_active_order(symbol=symbol)
+        self.trading = False
+        log("Bot ready for a new trade")
 
     def update_engine(self):
         self.updating = True
@@ -114,14 +132,17 @@ class ByBot:
             self.update()
             sleep(1 * 10)
 
+    def update_balance(self):
+        self.balance = self.session.get_wallet_balance()['result']['USDT']['available_balance']
+
     def update(self):
         try:
-            self.balance = self.session.get_wallet_balance()['result']['USDT']['available_balance']
+            self.update_balance()
             position = self.session.my_position(symbol=self.symbol)['result']
             leverage = self.leverage
             if position[0]['leverage'] != leverage or position[1]['leverage'] != leverage:
                 self.session.set_leverage(symbol=self.symbol, buy_leverage=leverage, sell_leverage=leverage)
-            if self.trading == True and position[0]['size'] + position[1]['size'] <= 0:
+            if self.trading and position[0]['size'] + position[1]['size'] <= 0:
                 self.trading = False
                 log("Bot ready for a new trade")
         except Exception:
