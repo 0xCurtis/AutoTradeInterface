@@ -90,7 +90,7 @@ class ByBot:
         qty = min(self.max, qty)
         sl = price * 0.995 if side == "Buy" else price * 1.005
         sl = round(sl, 4)
-        tp = price * 1.005 if side == "Buy" else price * 0.995
+        tp = price * 1.002 if side == "Buy" else price * 0.998
         tp = round(tp, 4)
         # trailing_stop = round(price * self.margin, 2)
         order = self.session.place_active_order(
@@ -118,12 +118,28 @@ class ByBot:
              f'SL: {sl} TP: {tp}\n'
              f'Order ID: {self.order_id}')
 
-    def close_order(self, symbol):
+    def replace_order(self, side, symbol):
         if symbol != self.symbol:
             raise "Wrong symbol"
-        self.session.cancel_active_order(symbol=symbol)
-        self.trading = False
-        log("Bot ready for a new trade")
+        price = self.session.public_trading_records(symbol=symbol, limit=1)['result'][0]['price']
+        exposure = self.size * self.balance
+        sl = price * 0.995 if side == "Buy" else price * 1.005
+        sl = round(sl, 4)
+        tp = price * 1.002 if side == "Buy" else price * 0.998
+        tp = round(tp, 4)
+        order = self.session.replace_active_order(
+            symbol=symbol,
+            order_id=self.order_id,
+            take_profit=tp,
+            stop_loss=sl
+        )
+        req_check(order)
+        self.order_id = order['result']['order_id']
+        info(f'{side} order replaced\n'
+             f'At: {price} with {qty} {symbol} for {exposure} USDT\n'
+             f'SL: {sl} TP: {tp}\n'
+             f'Order ID: {self.order_id}')
+
 
     def update_engine(self):
         self.updating = True

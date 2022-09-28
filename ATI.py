@@ -12,15 +12,17 @@ authorized_ips = ["52.89.214.238", "34.212.75.30", "54.218.53.128", "52.32.178.7
 @app.route('/open_order', methods=['POST'])
 def open_order():
     order_ip = request.remote_addr
-    BB.info(f"Incoming request from {order_ip}")
     if order_ip not in authorized_ips:
         BB.error("Unauthorized ip", False)
         # return "Not Authorized"
     r = request.json
+    BB.info(f"{r['side']} request from {order_ip}")
     try:
         if bot.trading:
-            bot.close_order(r['symbol'])
-        bot.open_order(r['side'], r['symbol'])
+            # bot.replace_order(r['side'], r['symbol'])
+            pass
+        else:
+            bot.open_order(r['side'], r['symbol'])
     except NameError as e:
         BB.error(f"Missing request parameter: {e}")
         return f"Missing request parameter: {e}"
