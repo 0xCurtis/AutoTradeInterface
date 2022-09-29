@@ -56,7 +56,6 @@ class ByBot:
             self.name = cfg['name']
             self.network = cfg['network']
             self.leverage = order['leverage']
-            self.margin = order['margin'] / 100
             self.max = order['max']
             self.size = order['size']
             self.symbol = order['symbol']
