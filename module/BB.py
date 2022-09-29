@@ -31,9 +31,9 @@ def error(msg, e_info=False):
     logger.error(msg, exc_info=e_info)
 
 
-def req_check(r):
+def req_check(r, t="Open order"):
     if r['ret_code'] != 0:
-        raise f"Request failed {r['ret_msg']}"
+        raise f"{t} failed {r['ret_msg']}"
 
 
 class ByBot:
@@ -52,7 +52,7 @@ class ByBot:
             self.updating = False
             self.trading = False
             self.balance = 0
-            self.order_id = None
+            self.order = None
             self.name = cfg['name']
             self.network = cfg['network']
             self.leverage = order['leverage']
@@ -69,7 +69,8 @@ class ByBot:
             error(f"Config file error: {e}")
             raise
         self.add_log_handle()
-        info(f"Bot {self.name} ready")
+        self.update_balance()
+        info(f"Bot {self.name} ready, {self.balance}$ available")
 
     def add_log_handle(self):
         logging.addLevelName(11, 'RUN')
@@ -81,64 +82,45 @@ class ByBot:
         fh.suffix = "%Y-%m-%d.log"
         logger.addHandler(fh)
 
-    def open_order(self, side, symbol):
-        if symbol != self.symbol:
-            raise "Wrong symbol"
-        price = self.session.public_trading_records(symbol=symbol, limit=1)['result'][0]['price']
-        exposure = self.size * self.balance
-        qty = round((exposure / price) * self.leverage, 5)
-        qty = min(self.max, qty)
-        sl = price * 0.995 if side == "Buy" else price * 1.005
-        sl = round(sl, 4)
-        tp = price * 1.002 if side == "Buy" else price * 0.998
-        tp = round(tp, 4)
-        # trailing_stop = round(price * self.margin, 2)
-        order = self.session.place_active_order(
-            symbol=symbol,
+    def place_order(self, side, qty, exposure):
+        self.order = self.session.place_active_order(
+            symbol=self.symbol,
             side=side,
-            order_type="Market",
+            order_type='Market',
             qty=qty,
-            time_in_force="GoodTillCancel",
+            time_in_force='GoodTillCancel',
             reduce_only=False,
-            close_on_trigger=False,
-            stop_loss=sl,
-            take_profit=tp
+            close_on_trigger=False
         )
-        req_check(order)
-        # limit = self.session.set_trading_stop(
-        #     symbol=symbol,
-        #     side=side,
-        #     trailing_stop=trailing_stop
-        # )
-        # req_check(limit)
+        req_check(self.order)
         self.trading = True
-        self.order_id = order['result']['order_id']
-        info(f'{side} order placed\n'
-             f'At: {price} with {qty} {symbol} for {exposure} USDT\n'
-             f'SL: {sl} TP: {tp}\n'
-             f'Order ID: {self.order_id}')
+        position = self.session.my_position(symbol=self.symbol)['result']
+        price = position[side == "Sell"]["entry_price"]
 
-    def replace_order(self, side, symbol):
-        if symbol != self.symbol:
-            raise "Wrong symbol"
-        price = self.session.public_trading_records(symbol=symbol, limit=1)['result'][0]['price']
-        exposure = self.size * self.balance
-        sl = price * 0.995 if side == "Buy" else price * 1.005
-        sl = round(sl, 4)
-        tp = price * 1.002 if side == "Buy" else price * 0.998
-        tp = round(tp, 4)
-        order = self.session.replace_active_order(
-            symbol=symbol,
-            order_id=self.order_id,
-            take_profit=tp,
-            stop_loss=sl
+        stop_loss = price * 0.995 if side == "Buy" else price * 1.005
+        stop_loss = round(stop_loss, 4)
+        take_profit = price * 1.002 if side == "Buy" else price * 0.998
+        take_profit = round(take_profit, 4)
+
+        info(f"{price} tp: {take_profit} sl: {stop_loss}")
+        trading_stop = self.session.set_trading_stop(
+            symbol=self.symbol,
+            side=side,
+            stop_loss=stop_loss,
+            take_profit=take_profit
         )
-        req_check(order)
-        self.order_id = order['result']['order_id']
-        info(f'{side} order replaced\n'
-             f'At: {price} with {qty} {symbol} for {exposure} USDT\n'
-             f'SL: {sl} TP: {tp}\n'
-             f'Order ID: {self.order_id}')
+        req_check(trading_stop, "Trading stop")
+        info(f'{side} order placed\n'
+             f'At: {price} with {qty} {self.symbol} for {exposure} USDT\n'
+             f'SL: {stop_loss} TP: {take_profit}\n'
+             f'Order ID: {self.order["result"]["order_id"]}')
+
+
+    def open_order(self, side):
+        price = self.session.public_trading_records(symbol=self.symbol, limit=1)['result'][0]['price']
+        exposure = min(self.size * self.balance, self.max)
+        qty = round((exposure / price) * self.leverage, 5)
+        self.place_order(side, qty, exposure)
 
 
     def update_engine(self):
@@ -160,7 +142,7 @@ class ByBot:
                 self.session.set_leverage(symbol=self.symbol, buy_leverage=leverage, sell_leverage=leverage)
             if self.trading and position[0]['size'] + position[1]['size'] <= 0:
                 self.trading = False
-                log("Bot ready for a new trade")
+                log(f"Bot ready for a new trade, {self.balance}$ available")
         except Exception:
             self.updating = False
             raise

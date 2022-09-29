@@ -19,13 +19,12 @@ def open_order():
     BB.info(f"{r['side']} request from {order_ip}")
     try:
         if bot.trading:
-            # bot.replace_order(r['side'], r['symbol'])
-            pass
+            BB.error("Still trading, can't open new order")
         else:
-            bot.open_order(r['side'], r['symbol'])
-    except NameError as e:
-        BB.error(f"Missing request parameter: {e}")
-        return f"Missing request parameter: {e}"
+            bot.open_order(r['side'])
+    except NameError as err:
+        BB.error(f"Missing request parameter: {err}")
+        return f"Missing request parameter: {err}"
     except BB.FailedRequestError:
         BB.error("Request error")
         return "Request error"
