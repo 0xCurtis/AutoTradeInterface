@@ -69,7 +69,7 @@ class ByBot:
             raise
         self.add_log_handle()
         self.update_balance()
-        info(f"Bot {self.name} ready, {self.balance}$ available")
+        info(f"Bot {self.name} ready, {self.balance:.2f}$ available")
 
     def add_log_handle(self):
         logging.addLevelName(11, 'RUN')
@@ -101,7 +101,6 @@ class ByBot:
         take_profit = price * 1.002 if side == "Buy" else price * 0.998
         take_profit = round(take_profit, 4)
 
-        info(f"{price} tp: {take_profit} sl: {stop_loss}")
         trading_stop = self.session.set_trading_stop(
             symbol=self.symbol,
             side=side,
@@ -110,8 +109,8 @@ class ByBot:
         )
         req_check(trading_stop, "Trading stop")
         info(f'{side} order placed\n'
-             f'At: {price} with {qty} {self.symbol} for {exposure} USDT\n'
-             f'SL: {stop_loss} TP: {take_profit}\n'
+             f'Price: {price:.2f} QTY: {qty} {self.symbol} for {exposure:.2f} USDT\n'
+             f'SL: {stop_loss:.2f} TP: {take_profit:.2f}\n'
              f'Order ID: {self.order["result"]["order_id"]}')
 
 
@@ -141,7 +140,7 @@ class ByBot:
                 self.session.set_leverage(symbol=self.symbol, buy_leverage=leverage, sell_leverage=leverage)
             if self.trading and position[0]['size'] + position[1]['size'] <= 0:
                 self.trading = False
-                log(f"Bot ready for a new trade, {self.balance}$ available")
+                log(f"Bot ready for a new trade, {self.balance:.2f}$ available")
         except Exception:
             self.updating = False
             raise
